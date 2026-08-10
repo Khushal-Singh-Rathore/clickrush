@@ -1,5 +1,5 @@
 def main():
-    print("Hello from sqlalchemy-indepth!")
+    print("Hello from clickrush!")
 
 
 if __name__ == "__main__":

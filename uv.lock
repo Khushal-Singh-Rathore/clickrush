@@ -84,7 +84,7 @@ wheels = [
 ]
 
 [[package]]
-name = "sqlalchemy-indepth"
+name = "clickrush"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
