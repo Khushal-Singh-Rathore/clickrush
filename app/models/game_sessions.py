@@ -1,27 +1,88 @@
-from sqlalchemy import ForeignKey
-from database import Base
-from sqlalchemy.orm import mapped_column, Mapped, relationship
+import enum
 import uuid
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
 if TYPE_CHECKING:
-    from models.users import User
+    from app.models.users import User
+
+
+class GameStatus(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    ABANDONED = "ABANDONED"
+
 
 class GameSession(Base):
     __tablename__ = "game_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
     )
-    click_count: Mapped[int] = mapped_column(nullable=False, default=0)
-    score: Mapped[int] = mapped_column(nullable=False, default=0)
+    click_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+    score: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
     started_at: Mapped[datetime] = mapped_column(
-        default= lambda:datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
-    ended_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    user:Mapped["User"] = relationship(back_populates="game_sessions")
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    status: Mapped[GameStatus] = mapped_column(
+        Enum(
+            GameStatus,
+            name="gamestatus",
+            native_enum=True,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        default=GameStatus.ACTIVE,
+        nullable=False,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship(
+        "User",
+        back_populates="game_sessions",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_game_sessions_user_history",
+            "user_id",
+            text("started_at DESC"),
+        ),
+        Index(
+            "ix_game_sessions_leaderboard_global",
+            "status",
+            text("score DESC"),
+        ),
+        Index(
+            "ix_game_sessions_leaderboard_timeframe",
+            "status",
+            "started_at",
+            text("score DESC"),
+        ),
+    )
