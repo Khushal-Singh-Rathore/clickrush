@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.routers import auth, games
+from app.routers import auth, games, websocket
 
 app = FastAPI(
     title="ClickRush API",
@@ -24,6 +24,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(games.router)
+app.include_router(websocket.router)
+
 
 
 
