@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -14,8 +15,6 @@ from app.utils.security import decode_access_token
 
 router = APIRouter(tags=["WebSocket Gameplay"])
 
-GAME_DURATION_SECONDS = 60.0
-
 
 @router.websocket("/ws/games/{game_id}")
 async def game_websocket(
@@ -24,7 +23,7 @@ async def game_websocket(
     token: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    """WebSocket endpoint for 60-second real-time click gameplay."""
+    """WebSocket endpoint for real-time click gameplay (supports 60s classic or 15s speed blitz)."""
     await websocket.accept()
 
     if not token:
@@ -62,6 +61,9 @@ async def game_websocket(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Game session is not active")
         return
 
+    # Dynamic duration from session definition (e.g. 15.0 or 60.0)
+    game_duration_seconds = float(game_session.duration_seconds or 60)
+
     # Ensure started_at is timezone-aware
     started_at = game_session.started_at
     if started_at.tzinfo is None:
@@ -70,16 +72,17 @@ async def game_websocket(
     now = datetime.now(timezone.utc)
     elapsed = (now - started_at).total_seconds()
 
-    # If 60 seconds already elapsed before connecting
-    if elapsed >= GAME_DURATION_SECONDS:
+    # If duration already elapsed before connecting
+    if elapsed >= game_duration_seconds:
         game_session.status = GameStatus.COMPLETED
-        game_session.ended_at = started_at + timedelta(seconds=GAME_DURATION_SECONDS)
+        game_session.ended_at = started_at + timedelta(seconds=game_duration_seconds)
         db.commit()
         await websocket.send_json({
             "type": "game_complete",
             "game_id": str(game_session.id),
             "click_count": game_session.click_count,
             "score": game_session.score,
+            "duration_seconds": game_session.duration_seconds,
             "started_at": started_at.isoformat(),
             "ended_at": game_session.ended_at.isoformat(),
             "status": game_session.status.value,
@@ -88,25 +91,26 @@ async def game_websocket(
         return
 
     click_count = game_session.click_count
-    seconds_remaining = round(GAME_DURATION_SECONDS - elapsed, 2)
+    seconds_remaining = round(game_duration_seconds - elapsed, 2)
 
     # Notify client that game is active and ready
     await websocket.send_json({
         "type": "game_start",
         "game_id": str(game_session.id),
+        "duration_seconds": game_session.duration_seconds,
         "seconds_remaining": seconds_remaining,
         "click_count": click_count,
     })
 
     try:
-        # Gameplay loop
+        # Gameplay loop with timeout for server-authoritative timer
         while True:
-            raw_data = await websocket.receive_text()
             current_now = datetime.now(timezone.utc)
             current_elapsed = (current_now - started_at).total_seconds()
+            remaining_timeout = max(0.05, game_duration_seconds - current_elapsed)
 
-            if current_elapsed >= GAME_DURATION_SECONDS:
-                # 60-second limit reached
+            if current_elapsed >= game_duration_seconds:
+                # Limit reached
                 game_session.click_count = click_count
                 game_session.score = click_count
                 game_session.ended_at = current_now
@@ -117,12 +121,39 @@ async def game_websocket(
                     "game_id": str(game_session.id),
                     "click_count": game_session.click_count,
                     "score": game_session.score,
+                    "duration_seconds": game_session.duration_seconds,
                     "started_at": started_at.isoformat(),
                     "ended_at": game_session.ended_at.isoformat(),
                     "status": game_session.status.value,
                 })
                 await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
                 break
+
+            try:
+                raw_data = await asyncio.wait_for(websocket.receive_text(), timeout=remaining_timeout)
+            except asyncio.TimeoutError:
+                # Timer expired while waiting for user input
+                finish_now = datetime.now(timezone.utc)
+                game_session.click_count = click_count
+                game_session.score = click_count
+                game_session.ended_at = finish_now
+                game_session.status = GameStatus.COMPLETED
+                db.commit()
+                await websocket.send_json({
+                    "type": "game_complete",
+                    "game_id": str(game_session.id),
+                    "click_count": game_session.click_count,
+                    "score": game_session.score,
+                    "duration_seconds": game_session.duration_seconds,
+                    "started_at": started_at.isoformat(),
+                    "ended_at": finish_now.isoformat(),
+                    "status": game_session.status.value,
+                })
+                await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
+                break
+
+            current_now = datetime.now(timezone.utc)
+            current_elapsed = (current_now - started_at).total_seconds()
 
             try:
                 data = json.loads(raw_data)
@@ -132,7 +163,7 @@ async def game_websocket(
             msg_type = data.get("type")
             if msg_type == "click":
                 click_count += 1
-                sec_rem = max(0.0, round(GAME_DURATION_SECONDS - current_elapsed, 2))
+                sec_rem = max(0.0, round(game_duration_seconds - current_elapsed, 2))
                 await websocket.send_json({
                     "type": "state",
                     "click_count": click_count,
@@ -150,6 +181,7 @@ async def game_websocket(
                     "game_id": str(game_session.id),
                     "click_count": game_session.click_count,
                     "score": game_session.score,
+                    "duration_seconds": game_session.duration_seconds,
                     "started_at": started_at.isoformat(),
                     "ended_at": game_session.ended_at.isoformat(),
                     "status": game_session.status.value,
@@ -168,7 +200,7 @@ async def game_websocket(
         if game_session and game_session.status == GameStatus.ACTIVE:
             game_session.click_count = click_count
             game_session.score = click_count
-            if current_elapsed >= GAME_DURATION_SECONDS:
+            if current_elapsed >= game_duration_seconds:
                 game_session.status = GameStatus.COMPLETED
                 game_session.ended_at = current_now
             else:

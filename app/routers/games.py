@@ -2,14 +2,14 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.game_sessions import GameSession, GameStatus
 from app.models.users import User
-from app.schemas.games import GameSessionResponse
+from app.schemas.games import GameSessionResponse, GameStartRequest
 
 router = APIRouter(prefix="/games", tags=["Game Lifecycle"])
 
@@ -23,14 +23,20 @@ router = APIRouter(prefix="/games", tags=["Game Lifecycle"])
 def start_game(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    payload: Annotated[GameStartRequest | None, Body()] = None,
 ) -> GameSession:
-    """Start a new 60-second game session for the authenticated user."""
+    """Start a new game session (e.g. 60s classic or 15s speed blitz) for the authenticated user."""
+    duration = payload.duration_seconds if payload else 60
+    if duration not in (15, 60):
+        duration = 60
+
     now = datetime.now(timezone.utc)
     game_session = GameSession(
         user_id=current_user.id,
         status=GameStatus.ACTIVE,
         click_count=0,
         score=0,
+        duration_seconds=duration,
         started_at=now,
     )
     db.add(game_session)

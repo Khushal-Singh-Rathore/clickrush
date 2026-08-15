@@ -15,12 +15,16 @@ router = APIRouter(prefix="/leaderboard", tags=["Leaderboards"])
 
 def _build_leaderboard_query(
     db: Session,
+    duration_seconds: int = 60,
     start_time: datetime | None = None,
 ):
     query = (
         db.query(GameSession, User)
         .join(User, GameSession.user_id == User.id)
-        .filter(GameSession.status == GameStatus.COMPLETED)
+        .filter(
+            GameSession.status == GameStatus.COMPLETED,
+            GameSession.duration_seconds == duration_seconds,
+        )
     )
     if start_time:
         query = query.filter(GameSession.ended_at >= start_time)
@@ -41,11 +45,12 @@ def _build_leaderboard_query(
 def get_global_leaderboard(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    duration_seconds: int = Query(60, description="Game duration filter (60 or 15)"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of entries to return"),
     offset: int = Query(0, ge=0, description="Number of entries to skip"),
 ) -> LeaderboardResponse:
     """Retrieve global all-time leaderboard ordered by top score (Requires Authentication)."""
-    query = _build_leaderboard_query(db)
+    query = _build_leaderboard_query(db, duration_seconds=duration_seconds)
     total_count = query.count()
     results = query.offset(offset).limit(limit).all()
 
@@ -55,6 +60,7 @@ def get_global_leaderboard(
             user_name=user.name,
             score=game.score,
             click_count=game.click_count,
+            duration_seconds=game.duration_seconds,
             ended_at=game.ended_at,
         )
         for idx, (game, user) in enumerate(results)
@@ -62,6 +68,7 @@ def get_global_leaderboard(
 
     return LeaderboardResponse(
         timeframe="global",
+        duration_seconds=duration_seconds,
         total=total_count,
         limit=limit,
         offset=offset,
@@ -78,6 +85,7 @@ def get_global_leaderboard(
 def get_daily_leaderboard(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    duration_seconds: int = Query(60, description="Game duration filter (60 or 15)"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of entries to return"),
     offset: int = Query(0, ge=0, description="Number of entries to skip"),
 ) -> LeaderboardResponse:
@@ -85,7 +93,7 @@ def get_daily_leaderboard(
     now = datetime.now(timezone.utc)
     start_of_day = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
-    query = _build_leaderboard_query(db, start_time=start_of_day)
+    query = _build_leaderboard_query(db, duration_seconds=duration_seconds, start_time=start_of_day)
     total_count = query.count()
     results = query.offset(offset).limit(limit).all()
 
@@ -95,6 +103,7 @@ def get_daily_leaderboard(
             user_name=user.name,
             score=game.score,
             click_count=game.click_count,
+            duration_seconds=game.duration_seconds,
             ended_at=game.ended_at,
         )
         for idx, (game, user) in enumerate(results)
@@ -102,6 +111,7 @@ def get_daily_leaderboard(
 
     return LeaderboardResponse(
         timeframe="daily",
+        duration_seconds=duration_seconds,
         total=total_count,
         limit=limit,
         offset=offset,
@@ -118,6 +128,7 @@ def get_daily_leaderboard(
 def get_weekly_leaderboard(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
+    duration_seconds: int = Query(60, description="Game duration filter (60 or 15)"),
     limit: int = Query(50, ge=1, le=100, description="Maximum number of entries to return"),
     offset: int = Query(0, ge=0, description="Number of entries to skip"),
 ) -> LeaderboardResponse:
@@ -125,7 +136,7 @@ def get_weekly_leaderboard(
     now = datetime.now(timezone.utc)
     start_of_week = now - timedelta(days=7)
 
-    query = _build_leaderboard_query(db, start_time=start_of_week)
+    query = _build_leaderboard_query(db, duration_seconds=duration_seconds, start_time=start_of_week)
     total_count = query.count()
     results = query.offset(offset).limit(limit).all()
 
@@ -135,6 +146,7 @@ def get_weekly_leaderboard(
             user_name=user.name,
             score=game.score,
             click_count=game.click_count,
+            duration_seconds=game.duration_seconds,
             ended_at=game.ended_at,
         )
         for idx, (game, user) in enumerate(results)
@@ -142,6 +154,7 @@ def get_weekly_leaderboard(
 
     return LeaderboardResponse(
         timeframe="weekly",
+        duration_seconds=duration_seconds,
         total=total_count,
         limit=limit,
         offset=offset,

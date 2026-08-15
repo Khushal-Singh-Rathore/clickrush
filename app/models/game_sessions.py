@@ -42,6 +42,12 @@ class GameSession(Base):
         default=0,
         nullable=False,
     )
+    duration_seconds: Mapped[int] = mapped_column(
+        Integer,
+        default=60,
+        server_default="60",
+        nullable=False,
+    )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -77,11 +83,13 @@ class GameSession(Base):
         Index(
             "ix_game_sessions_leaderboard_global",
             "status",
+            "duration_seconds",
             text("score DESC"),
         ),
         Index(
             "ix_game_sessions_leaderboard_timeframe",
             "status",
+            "duration_seconds",
             "started_at",
             text("score DESC"),
         ),

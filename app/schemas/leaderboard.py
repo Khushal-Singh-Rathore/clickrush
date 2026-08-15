@@ -8,6 +8,7 @@ class LeaderboardEntry(BaseModel):
     user_name: str
     score: int
     click_count: int
+    duration_seconds: int
     ended_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -15,6 +16,7 @@ class LeaderboardEntry(BaseModel):
 
 class LeaderboardResponse(BaseModel):
     timeframe: str
+    duration_seconds: int
     total: int
     limit: int
     offset: int
