@@ -92,6 +92,8 @@ export const useGameWebSocket = (gameId: string | null, token: string | null) =>
     };
 
     return () => {
+      ws.onclose = null;
+      ws.onerror = null;
       ws.close();
     };
   }, [gameId, token]);

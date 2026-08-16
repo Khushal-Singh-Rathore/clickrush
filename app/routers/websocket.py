@@ -2,7 +2,6 @@ import asyncio
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
 
 import jwt
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
@@ -64,34 +63,35 @@ async def game_websocket(
     # Dynamic duration from session definition (e.g. 15.0 or 60.0)
     game_duration_seconds = float(game_session.duration_seconds or 60)
 
-    # Ensure started_at is timezone-aware
-    started_at = game_session.started_at
-    if started_at.tzinfo is None:
-        started_at = started_at.replace(tzinfo=timezone.utc)
-
-    now = datetime.now(timezone.utc)
-    elapsed = (now - started_at).total_seconds()
-
-    # If duration already elapsed before connecting
-    if elapsed >= game_duration_seconds:
-        game_session.status = GameStatus.COMPLETED
-        game_session.ended_at = started_at + timedelta(seconds=game_duration_seconds)
-        db.commit()
-        await websocket.send_json({
-            "type": "game_complete",
-            "game_id": str(game_session.id),
-            "click_count": game_session.click_count,
-            "score": game_session.score,
-            "duration_seconds": game_session.duration_seconds,
-            "started_at": started_at.isoformat(),
-            "ended_at": game_session.ended_at.isoformat(),
-            "status": game_session.status.value,
-        })
-        await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
-        return
-
     click_count = game_session.click_count
-    seconds_remaining = round(game_duration_seconds - elapsed, 2)
+    started_at: datetime | None = None
+
+    # If game session was already in progress (reconnection case)
+    if click_count > 0:
+        started_at = game_session.started_at
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        elapsed = (now - started_at).total_seconds()
+        if elapsed >= game_duration_seconds:
+            game_session.status = GameStatus.COMPLETED
+            game_session.ended_at = started_at + timedelta(seconds=game_duration_seconds)
+            db.commit()
+            await websocket.send_json({
+                "type": "game_complete",
+                "game_id": str(game_session.id),
+                "click_count": game_session.click_count,
+                "score": game_session.score,
+                "duration_seconds": game_session.duration_seconds,
+                "started_at": started_at.isoformat(),
+                "ended_at": game_session.ended_at.isoformat(),
+                "status": game_session.status.value,
+            })
+            await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
+            return
+        seconds_remaining = round(game_duration_seconds - elapsed, 2)
+    else:
+        seconds_remaining = game_duration_seconds
 
     # Notify client that game is active and ready
     await websocket.send_json({
@@ -105,6 +105,48 @@ async def game_websocket(
     try:
         # Gameplay loop with timeout for server-authoritative timer
         while True:
+            # If gameplay hasn't officially started yet (waiting for first click)
+            if started_at is None:
+                raw_data = await websocket.receive_text()
+                try:
+                    data = json.loads(raw_data)
+                except Exception:
+                    data = {}
+
+                msg_type = data.get("type")
+                if msg_type == "click":
+                    # FIRST CLICK: Officially start the timer right now!
+                    started_at = datetime.now(timezone.utc)
+                    game_session.started_at = started_at
+                    click_count = 1
+                    game_session.click_count = 1
+                    game_session.score = 1
+                    db.commit()
+
+                    await websocket.send_json({
+                        "type": "state",
+                        "click_count": 1,
+                        "seconds_remaining": game_duration_seconds,
+                    })
+                elif msg_type == "finish":
+                    game_session.ended_at = datetime.now(timezone.utc)
+                    game_session.status = GameStatus.COMPLETED
+                    db.commit()
+                    await websocket.send_json({
+                        "type": "game_complete",
+                        "game_id": str(game_session.id),
+                        "click_count": 0,
+                        "score": 0,
+                        "duration_seconds": game_session.duration_seconds,
+                        "started_at": game_session.started_at.isoformat(),
+                        "ended_at": game_session.ended_at.isoformat(),
+                        "status": game_session.status.value,
+                    })
+                    await websocket.close(code=status.WS_1000_NORMAL_CLOSURE)
+                    break
+                continue
+
+            # Active gameplay countdown loop
             current_now = datetime.now(timezone.utc)
             current_elapsed = (current_now - started_at).total_seconds()
             remaining_timeout = max(0.05, game_duration_seconds - current_elapsed)
@@ -196,11 +238,15 @@ async def game_websocket(
 
     except WebSocketDisconnect:
         current_now = datetime.now(timezone.utc)
-        current_elapsed = (current_now - started_at).total_seconds()
+        if started_at is not None:
+            current_elapsed = (current_now - started_at).total_seconds()
+        else:
+            current_elapsed = 0.0
+
         if game_session and game_session.status == GameStatus.ACTIVE:
             game_session.click_count = click_count
             game_session.score = click_count
-            if current_elapsed >= game_duration_seconds:
+            if started_at is not None and current_elapsed >= game_duration_seconds:
                 game_session.status = GameStatus.COMPLETED
                 game_session.ended_at = current_now
             else:
