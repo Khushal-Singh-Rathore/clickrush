@@ -5,7 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![Pytest](https://img.shields.io/badge/Pytest_33%2F33_Passed-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
+![Pytest](https://img.shields.io/badge/Pytest?style=for-the-badge&logo=pytest&logoColor=white)
 
 **ClickRush** is a full-stack, real-time web application where players compete to click as fast as possible within set timeframes (60-Second Classic Endurance or 15-Second Speed Blitz).
 
