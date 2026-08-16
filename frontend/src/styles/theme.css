@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  /* ==========================================================================
-     GLASSMORPHISM NATURE THEME TOKENS
-     ========================================================================== */
   --font-base: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
 }

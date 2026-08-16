@@ -1,11 +1,27 @@
-# Python-generated files
+# Python bytecode & cache
 __pycache__/
 *.py[oc]
+.pytest_cache/
 build/
 dist/
 wheels/
 *.egg-info
 
-# Virtual environments
-.venv
+# Virtual environments & local secrets
+.venv/
 .env
+.env*.local
+
+# Node dependencies & Frontend builds
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# OS & Editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Internal assignment notes (excluded from submission repo)
+REQUIREMENTS.md
+STAGES.md

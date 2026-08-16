@@ -78,7 +78,7 @@ export const Dashboard: React.FC = () => {
               }`}
             >
               <Zap className="w-3.5 h-3.5 fill-current text-amber-300" />
-              15s Speed Blitz ⚡
+              15s Speed Blitz
             </button>
           </div>
         </div>

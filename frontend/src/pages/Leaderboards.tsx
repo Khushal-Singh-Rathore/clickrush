@@ -119,7 +119,7 @@ export const Leaderboards: React.FC = () => {
             }`}
           >
             <Zap className="w-3.5 h-3.5 fill-current text-amber-300" />
-            15s Speed Blitz ⚡
+            15s Speed Blitz
           </button>
         </div>
 
@@ -194,9 +194,9 @@ export const Leaderboards: React.FC = () => {
                 {leaderboardData?.entries.map((entry) => (
                   <tr key={entry.rank} className="hover:bg-white/10 transition-colors">
                     <td className="py-4 px-6 font-bold text-white">
-                      {entry.rank === 1 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs">🥇 1</span>}
-                      {entry.rank === 2 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-slate-200/20 text-slate-200 border border-slate-300/40 text-xs">🥈 2</span>}
-                      {entry.rank === 3 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-amber-700/20 text-amber-200 border border-amber-600/40 text-xs">🥉 3</span>}
+                      {entry.rank === 1 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 text-xs">#1</span>}
+                      {entry.rank === 2 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-slate-200/20 text-slate-200 border border-slate-300/40 text-xs">#2</span>}
+                      {entry.rank === 3 && <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-amber-700/20 text-amber-200 border border-amber-600/40 text-xs">#3</span>}
                       {entry.rank > 3 && `#${entry.rank}`}
                     </td>
                     <td className="py-4 px-6 font-semibold text-white">
