@@ -13,6 +13,13 @@ Built with a server-authoritative backend architecture (FastAPI + WebSockets + P
 
 ---
 
+## 🌐 Live Production Links
+
+* **Live Web Application (Cloudflare Pages):** [https://clickrush.pages.dev](https://clickrush.pages.dev)
+* **Live API Health Check (Render):** [https://clickrush-api.onrender.com/health](https://clickrush-api.onrender.com/health)
+
+---
+
 ## Key Features
 
 ### 1. Secure User Authentication
@@ -152,7 +159,7 @@ erDiagram
 
 ### WebSocket Endpoint
 
-* **URL:** `ws://localhost:8000/ws/games/{game_id}?token={JWT_TOKEN}`
+* **URL:** `wss://clickrush-api.onrender.com/ws/games/{game_id}?token={JWT_TOKEN}`
 * **Inbound Messages (Client to Server):**
   * `{"type": "click"}`: Record a click.
   * `{"type": "finish"}`: Request early session completion.
@@ -179,11 +186,12 @@ cd clickrush
 
 Create a `.env` file in the root directory:
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clickrush
-JWT_SECRET=super-secret-jwt-key-for-local-development
+ENVIRONMENT=development
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/clickrush
+JWT_SECRET_KEY=super-secret-jwt-key-for-local-development
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-CORS_ORIGINS=["http://localhost:5173", "http://localhost:3000"]
+CORS_ORIGINS=["https://clickrush.pages.dev","http://localhost:5173","http://localhost:3000"]
 ```
 
 ### Step 2: Apply Database Migrations
@@ -224,8 +232,8 @@ cd frontend && npm run build
 
 ---
 
-## Deployment Guide
+## Production Cloud Deployment Architecture
 
-* **Database (Neon PostgreSQL):** Create a serverless Postgres project on Neon.tech and set `DATABASE_URL`.
-* **Backend (Render):** Create a Web Service pointing to `app.main:app` with build command `uv sync` and start command `uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT`. Run `uv run alembic upgrade head` to migrate production DB.
-* **Frontend (Vercel / Cloudflare Pages):** Connect repository with root directory `frontend/`, build command `npm run build`, output directory `dist/`, and environment variable `VITE_API_URL`.
+* **Database (Render PostgreSQL - Singapore):** Managed PostgreSQL database hosted in Singapore with composite indexes for sub-millisecond query execution.
+* **Backend API (Render Web Service - Singapore):** Fast, stateless FastAPI server executing Alembic migrations (`uv run alembic upgrade head`) with WebSocket streaming and UptimeRobot 24/7 keep-alive ping (`/health`).
+* **Frontend SPA (Cloudflare Pages Edge CDN):** React 18 SPA built with Vite and Tailwind CSS v4, deployed to Cloudflare's global edge network (`https://clickrush.pages.dev`).

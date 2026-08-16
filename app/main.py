@@ -1,10 +1,13 @@
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.routers import auth, games, leaderboard, users, websocket
 
 # Determine if production environment to disable API docs
@@ -18,6 +21,10 @@ app = FastAPI(
     redoc_url=None if is_production else "/redoc",
     openapi_url=None if is_production else "/openapi.json",
 )
+
+# Register slowapi rate limiter state and exception handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS middleware using settings from environment
 app.add_middleware(

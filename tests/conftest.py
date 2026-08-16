@@ -3,7 +3,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.database import SessionLocal, engine
+from app.limiter import limiter
 from app.main import app
+
+# Disable slowapi rate limiting during automated pytest test execution
+limiter.enabled = False
 
 
 @pytest.fixture(scope="function")

@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.limiter import limiter
 from app.models.game_sessions import GameSession, GameStatus
 from app.models.users import User
 from app.schemas.games import GameSessionResponse, GameStartRequest
@@ -20,7 +21,9 @@ router = APIRouter(prefix="/games", tags=["Game Lifecycle"])
     status_code=status.HTTP_201_CREATED,
     summary="Start a new game session",
 )
+@limiter.limit("20/minute")
 def start_game(
+    request: Request,
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
     payload: Annotated[GameStartRequest | None, Body()] = None,
