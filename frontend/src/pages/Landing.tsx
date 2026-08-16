@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Timer, Trophy, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Zap, Timer, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Landing: React.FC = () => {
@@ -31,7 +31,6 @@ export const Landing: React.FC = () => {
             <span>{user ? "Go to Dashboard" : "Start Playing Now"}</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
-
         </div>
 
         {/* Feature Cards */}
