@@ -3,14 +3,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Database and Secret configuration (loaded from .env with local dev fallbacks)
     DATABASE_URL: str = Field(
-        default="postgresql+psycopg://khushalsinghrathore@localhost:5432/clickrush",
+        default="postgresql+psycopg://postgres:postgres@localhost:5432/clickrush",
         description="PostgreSQL connection string using psycopg driver",
     )
     JWT_SECRET_KEY: str = Field(
-        default="clickrush-super-secret-key-for-jwt-signing-minimum-32-chars",
+        default="development-only-secret-key-must-be-overridden-in-env",
         description="Secret key used to sign JWT access tokens",
     )
+
+    # Public metadata configuration defaults
     JWT_ALGORITHM: str = Field(
         default="HS256",
         description="Algorithm used for signing JWT tokens",
