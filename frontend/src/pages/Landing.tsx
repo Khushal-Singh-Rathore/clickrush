@@ -16,7 +16,7 @@ export const Landing: React.FC = () => {
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-white max-w-3xl mx-auto leading-tight drop-shadow-md">
-          How fast can you click in <span className="text-amber-300 underline decoration-amber-300/40 underline-offset-8">60 seconds?</span>
+          How fast can you <span className="text-amber-300 underline decoration-amber-300/40 underline-offset-8">click?</span>
         </h1>
 
         <p className="text-base text-white/80 max-w-xl mx-auto leading-relaxed">
@@ -31,13 +31,7 @@ export const Landing: React.FC = () => {
             <span>{user ? "Go to Dashboard" : "Start Playing Now"}</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
-          <Link
-            to="/leaderboards"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl glass-btn-secondary font-bold text-sm shadow-md"
-          >
-            <Trophy className="w-4 h-4 text-amber-300" />
-            <span>View Leaderboard</span>
-          </Link>
+
         </div>
 
         {/* Feature Cards */}

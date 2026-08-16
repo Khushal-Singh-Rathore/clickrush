@@ -3,6 +3,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Application Environment
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Application environment (development, production, testing)",
+    )
+
     # Database and Secret configuration (loaded from .env with local dev fallbacks)
     DATABASE_URL: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/clickrush",
