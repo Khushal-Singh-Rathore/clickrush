@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -8,11 +9,14 @@ export const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,11 +28,13 @@ export const Register: React.FC = () => {
         name,
         email,
         password,
+        turnstile_token: turnstileToken,
       });
 
       const loginRes = await api.post<{ access_token: string }>('/auth/login', {
         email,
         password,
+        turnstile_token: turnstileToken,
       });
 
       await login(loginRes.data.access_token);
@@ -45,8 +51,8 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md p-8 rounded-3xl bg-[#0f2413]/40 backdrop-blur-xl border border-white/20 shadow-2xl space-y-6">
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+      <div className="w-full max-w-md p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#0f2413]/40 backdrop-blur-xl border border-white/20 shadow-2xl space-y-6">
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-white">Create Account</h2>
           <p className="text-xs text-white/70">Join ClickRush and compete on global leaderboards</p>
@@ -105,6 +111,17 @@ export const Register: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Cloudflare Turnstile CAPTCHA Widget */}
+          {siteKey && (
+            <div className="py-2 flex justify-center">
+              <Turnstile
+                siteKey={siteKey}
+                onSuccess={(token) => setTurnstileToken(token)}
+                options={{ theme: 'dark', size: 'compact' }}
+              />
+            </div>
+          )}
 
           <button
             type="submit"

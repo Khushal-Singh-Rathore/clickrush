@@ -9,6 +9,12 @@ class Settings(BaseSettings):
         description="Application environment (development, production, testing)",
     )
 
+    # Cloudflare Turnstile CAPTCHA Secret Key
+    TURNSTILE_SECRET_KEY: str = Field(
+        default="",
+        description="Cloudflare Turnstile secret key for server-side CAPTCHA verification",
+    )
+
     # Database and Secret configuration (loaded from .env with local dev fallbacks)
     DATABASE_URL: str = Field(
         default="postgresql+psycopg://postgres:postgres@localhost:5432/clickrush",

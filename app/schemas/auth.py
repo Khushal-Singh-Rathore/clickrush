@@ -8,11 +8,13 @@ class UserRegister(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="Full name of the user")
     email: EmailStr = Field(..., description="User's email address")
     password: str = Field(..., min_length=6, max_length=128, description="User password (min 6 characters)")
+    turnstile_token: str | None = Field(default=None, description="Cloudflare Turnstile CAPTCHA response token")
 
 
 class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="User's email address")
     password: str = Field(..., description="User password")
+    turnstile_token: str | None = Field(default=None, description="Cloudflare Turnstile CAPTCHA response token")
 
 
 class UserResponse(BaseModel):
