@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Turnstile } from '@marsidev/react-turnstile';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
@@ -9,6 +9,7 @@ export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +37,9 @@ export const Login: React.FC = () => {
       } else {
         setError('Login failed. Please check your credentials.');
       }
+      // Reset the Turnstile widget so a fresh single-use token is generated for the retry
+      setTurnstileToken(null);
+      turnstileRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -91,8 +95,11 @@ export const Login: React.FC = () => {
           {siteKey && (
             <div className="py-2 flex justify-center">
               <Turnstile
+                ref={turnstileRef}
                 siteKey={siteKey}
                 onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                onError={() => setTurnstileToken(null)}
                 options={{ theme: 'dark', size: 'compact' }}
               />
             </div>
