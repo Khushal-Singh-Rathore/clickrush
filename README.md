@@ -13,18 +13,21 @@ Built with a server-authoritative backend architecture (FastAPI + WebSockets + P
 
 ---
 
-## 🌐 Live Production Links
+## 🎥 Video Demo & Live Production Link
 
-* **Live Web Application (Cloudflare Pages):** [https://clickrush.pages.dev](https://clickrush.pages.dev)
-* **Live API Health Check (Render):** [https://clickrush-api.onrender.com/health](https://clickrush-api.onrender.com/health)
+* **Live Web Application:** [https://clickrush.pages.dev](https://clickrush.pages.dev)
+* **Loom Video Walkthrough:** [Watch 2-Minute Video Demo on Loom](https://www.loom.com/share/757e5edd63ab44fa8692659c36c17671)
+
+[![Watch ClickRush Video Demo](https://cdn.loom.com/sessions/thumbnails/757e5edd63ab44fa8692659c36c17671-with-play.gif)](https://www.loom.com/share/757e5edd63ab44fa8692659c36c17671)
 
 ---
 
 ## Key Features
 
-### 1. Secure User Authentication
+### 1. Secure User Authentication & Bot Protection
 * Argon2id password hashing using `argon2-cffi` (resistant to GPU cracking).
 * Stateful Bearer JWT tokens for REST and WebSocket authentication.
+* Cloudflare Turnstile CAPTCHA integration and IP-based rate limiting (`slowapi`).
 * Protected endpoints and user session persistence.
 
 ### 2. Real-Time WebSocket Gameplay & Multi-Modes
@@ -49,15 +52,16 @@ Built with a server-authoritative backend architecture (FastAPI + WebSockets + P
 * Aggregate statistics: Best Score, Average Score, Total Games Played, and Exact Global Rank calculated for your best session.
 * Paginated personal history log detailing session status (`COMPLETED`, `ABANDONED`, `ACTIVE`), click count, score, duration tag, and timestamp.
 
-### 6. Glassmorphism Nature UI
+### 6. Mobile Responsive Glassmorphism UI
 * Frosted glass card overlays (`backdrop-blur-xl`, `bg-white/10`, `border-white/20`) over high-resolution nature wallpaper.
+* Fully responsive layout optimized for mobile screens and desktop viewports.
 
 ---
 
 ## Technology Stack
 
-* **Backend:** Python 3.13, FastAPI, SQLAlchemy 2.x, Alembic Migrations, PyJWT, Argon2-cffi, Uvicorn.
-* **Frontend:** React 18, Vite, TypeScript, Tailwind CSS v4, Lucide Icons, Axios, React Router v6.
+* **Backend:** Python 3.13, FastAPI, SQLAlchemy 2.x, Alembic Migrations, PyJWT, Argon2-cffi, slowapi, Uvicorn.
+* **Frontend:** React 18, Vite, TypeScript, Tailwind CSS v4, Lucide Icons, Axios, React Router v6, Cloudflare Turnstile.
 * **Database:** PostgreSQL (with typed SQLAlchemy `Mapped` models and composite performance indexes).
 * **Package Management:** `uv` (Fast Python package manager) and `npm`.
 
@@ -71,6 +75,7 @@ clickrush/
 │   ├── config.py                 # Pydantic BaseSettings environment config
 │   ├── database.py               # SQLAlchemy engine & session maker
 │   ├── dependencies.py           # get_current_user JWT dependency
+│   ├── limiter.py                # slowapi IP rate limiter setup
 │   ├── main.py                   # FastAPI app initialization & CORS middleware
 │   ├── models/                   # SQLAlchemy 2.x ORM models
 │   │   ├── users.py              # User model definition
@@ -143,23 +148,23 @@ erDiagram
 
 ### REST API Endpoints
 
-| Method | Endpoint | Auth | Description |
-| :--- | :--- | :---: | :--- |
-| `POST` | `/auth/register` | No | Create a new user account (`name`, `email`, `password`). |
-| `POST` | `/auth/login` | No | Authenticate credentials and receive Bearer JWT token. |
-| `GET` | `/auth/me` | Yes | Get profile details of the authenticated user. |
-| `POST` | `/games/start` | Yes | Start a new game session (`{"duration_seconds": 15}` or `60`). |
-| `GET` | `/games/{game_id}` | Yes | Retrieve details of a specific game session. |
-| `GET` | `/leaderboard` | Yes | All-time global leaderboard (`?duration_seconds=15|60`). |
-| `GET` | `/leaderboard/daily` | Yes | Daily leaderboard for current UTC day. |
-| `GET` | `/leaderboard/weekly` | Yes | Weekly leaderboard for the last 7 days. |
-| `GET` | `/users/me` | Yes | User stats (Best score, Avg score, Total games, Exact Rank). |
-| `GET` | `/users/me/games` | Yes | Paginated personal game history log. |
-| `GET` | `/health` | No | Uptime and database connectivity health check. |
+| Method | Endpoint | Auth | Rate Limit | Description |
+| :--- | :--- | :---: | :---: | :--- |
+| `POST` | `/auth/register` | No | 10/min | Create a new user account (`name`, `email`, `password`, `turnstile_token`). |
+| `POST` | `/auth/login` | No | 15/min | Authenticate credentials and receive Bearer JWT token. |
+| `GET` | `/auth/me` | Yes | - | Get profile details of the authenticated user. |
+| `POST` | `/games/start` | Yes | 20/min | Start a new game session (`{"duration_seconds": 15}` or `60`). |
+| `GET` | `/games/{game_id}` | Yes | - | Retrieve details of a specific game session. |
+| `GET` | `/leaderboard` | Yes | - | All-time global leaderboard (`?duration_seconds=15|60`). |
+| `GET` | `/leaderboard/daily` | Yes | - | Daily leaderboard for current UTC day. |
+| `GET` | `/leaderboard/weekly` | Yes | - | Weekly leaderboard for the last 7 days. |
+| `GET` | `/users/me` | Yes | - | User stats (Best score, Avg score, Total games, Exact Rank). |
+| `GET` | `/users/me/games` | Yes | - | Paginated personal game history log. |
+| `GET` | `/health` | No | - | Uptime and database connectivity health check. |
 
 ### WebSocket Endpoint
 
-* **URL:** `wss://clickrush-api.onrender.com/ws/games/{game_id}?token={JWT_TOKEN}`
+* **URL:** `/ws/games/{game_id}?token={JWT_TOKEN}`
 * **Inbound Messages (Client to Server):**
   * `{"type": "click"}`: Record a click.
   * `{"type": "finish"}`: Request early session completion.
@@ -191,7 +196,14 @@ DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/clickrush
 JWT_SECRET_KEY=super-secret-jwt-key-for-local-development
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
-CORS_ORIGINS=["https://clickrush.pages.dev","http://localhost:5173","http://localhost:3000"]
+CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+```
+
+Create a `frontend/.env` file:
+```env
+VITE_API_URL=http://localhost:8000
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 ```
 
 ### Step 2: Apply Database Migrations
@@ -234,6 +246,6 @@ cd frontend && npm run build
 
 ## Production Cloud Deployment Architecture
 
-* **Database (Render PostgreSQL - Singapore):** Managed PostgreSQL database hosted in Singapore with composite indexes for sub-millisecond query execution.
-* **Backend API (Render Web Service - Singapore):** Fast, stateless FastAPI server executing Alembic migrations (`uv run alembic upgrade head`) with WebSocket streaming and UptimeRobot 24/7 keep-alive ping (`/health`).
+* **Database (Render PostgreSQL):** Managed PostgreSQL database with composite indexes for sub-millisecond query execution.
+* **Backend API (Render Web Service):** Fast, stateless FastAPI server executing Alembic migrations (`uv run alembic upgrade head`) with WebSocket streaming and UptimeRobot 24/7 keep-alive ping (`/health`).
 * **Frontend SPA (Cloudflare Pages Edge CDN):** React 18 SPA built with Vite and Tailwind CSS v4, deployed to Cloudflare's global edge network (`https://clickrush.pages.dev`).
