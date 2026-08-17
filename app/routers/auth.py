@@ -95,9 +95,9 @@ def login(
     db: Annotated[Session, Depends(get_db)],
 ) -> Token:
     """Authenticate user with email and password, returning a JWT token."""
-    # Verify Turnstile CAPTCHA if configured
+    # Verify Turnstile CAPTCHA if provided in login credentials
     client_ip = request.client.host if request.client else None
-    if not verify_turnstile_captcha(credentials.turnstile_token, client_ip):
+    if credentials.turnstile_token and not verify_turnstile_captcha(credentials.turnstile_token, client_ip):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="CAPTCHA verification failed. Please complete the security challenge.",

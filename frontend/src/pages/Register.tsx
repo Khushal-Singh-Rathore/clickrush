@@ -34,7 +34,6 @@ export const Register: React.FC = () => {
       const loginRes = await api.post<{ access_token: string }>('/auth/login', {
         email,
         password,
-        turnstile_token: turnstileToken,
       });
 
       await login(loginRes.data.access_token);

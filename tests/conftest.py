@@ -2,12 +2,14 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from app.config import settings
 from app.database import SessionLocal, engine
 from app.limiter import limiter
 from app.main import app
 
-# Disable slowapi rate limiting during automated pytest test execution
+# Disable slowapi rate limiting and clear Turnstile secret during automated pytest test execution
 limiter.enabled = False
+settings.TURNSTILE_SECRET_KEY = ""
 
 
 @pytest.fixture(scope="function")
