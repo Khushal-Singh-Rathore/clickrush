@@ -9,7 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Game } from './pages/Game';
 import { Leaderboards } from './pages/Leaderboards';
 import { Profile } from './pages/Profile';
-import bgImage from './assets/best.jpeg';
+import { ObsidianBackground } from './components/ObsidianBackground';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -28,12 +28,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   return (
-    <div
-      className="min-h-screen text-white font-sans selection:bg-white/20 selection:text-white bg-cover bg-center bg-fixed bg-no-repeat"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
-      <Navbar />
-      <main>
+    <div className="min-h-screen text-white font-sans selection:bg-white/20 selection:text-white relative bg-[#020203]">
+      <ObsidianBackground />
+      <div className="relative z-10 min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -66,6 +65,7 @@ const AppContent: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      </div>
     </div>
   );
 };

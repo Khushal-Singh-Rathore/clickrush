@@ -25,3 +25,9 @@ frontend/dist/
 # Internal assignment notes (excluded from submission repo)
 REQUIREMENTS.md
 STAGES.md
+
+# Scratch & Playground scripts
+play.py
+play*.py
+scratch.py
+scratch*.py

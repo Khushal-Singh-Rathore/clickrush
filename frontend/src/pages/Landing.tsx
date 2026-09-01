@@ -9,8 +9,8 @@ export const Landing: React.FC = () => {
   return (
     <div className="min-h-[calc(100vh-5rem)] flex flex-col justify-between px-6 py-8 max-w-5xl mx-auto">
       {/* Hero Glass Container */}
-      <main className="my-auto text-center space-y-8 p-10 md:p-16 rounded-3xl bg-[#0f2413]/35 backdrop-blur-xl border border-white/20 shadow-2xl">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 border border-white/25 text-xs font-bold text-white shadow-sm">
+      <main className="my-auto text-center space-y-8 p-10 md:p-16 rounded-3xl glass-panel shadow-2xl">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-white shadow-sm">
           <Zap className="w-3.5 h-3.5 text-amber-300 fill-current" />
           <span>Real-Time Server Authoritative Challenge</span>
         </div>
@@ -35,7 +35,7 @@ export const Landing: React.FC = () => {
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 text-left">
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-3">
+          <div className="p-6 rounded-2xl glass-card space-y-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white border border-white/20">
               <Timer className="w-5 h-5" />
             </div>
@@ -45,7 +45,7 @@ export const Landing: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-3">
+          <div className="p-6 rounded-2xl glass-card space-y-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-amber-300 border border-white/20">
               <Zap className="w-5 h-5 fill-current" />
             </div>
@@ -55,7 +55,7 @@ export const Landing: React.FC = () => {
             </p>
           </div>
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 space-y-3">
+          <div className="p-6 rounded-2xl glass-card space-y-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white border border-white/20">
               <ShieldCheck className="w-5 h-5" />
             </div>
